@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SmartPlay",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Intelligent YouTube playback — skip silence, adaptive speed, save time.",
   "permissions": [
     "storage",

@@ -11,8 +11,63 @@
     <header>
       <h1>⚡ SmartPlay Settings</h1>
     </header>
-    
+
     <main>
+
+      <!-- ── Stats Section ─────────────────────────────────────────────────── -->
+      <section class="stats-section">
+        <h2>📊 Time Saved Stats</h2>
+
+        <!-- Today -->
+        <div class="stats-block">
+          <div class="stats-block-label">⏱ Today</div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="stat-today-total">0m 0s</div>
+              <div class="stat-name">Total</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-today-silence">0m 0s</div>
+              <div class="stat-name">Silence Skip</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-today-speed">0m 0s</div>
+              <div class="stat-name">Speed Up</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-today-filler">0m 0s</div>
+              <div class="stat-name">Filler Trim</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-divider"></div>
+
+        <!-- Lifetime -->
+        <div class="stats-block">
+          <div class="stats-block-label">♾ Lifetime</div>
+          <div class="stats-grid">
+            <div class="stat-card stat-card--lifetime">
+              <div class="stat-value" id="stat-lt-total">0m 0s</div>
+              <div class="stat-name">Total</div>
+            </div>
+            <div class="stat-card stat-card--lifetime">
+              <div class="stat-value" id="stat-lt-silence">0m 0s</div>
+              <div class="stat-name">Silence Skip</div>
+            </div>
+            <div class="stat-card stat-card--lifetime">
+              <div class="stat-value" id="stat-lt-speed">0m 0s</div>
+              <div class="stat-name">Speed Up</div>
+            </div>
+            <div class="stat-card stat-card--lifetime">
+              <div class="stat-value" id="stat-lt-filler">0m 0s</div>
+              <div class="stat-name">Filler Trim</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── General ────────────────────────────────────────────────────────── -->
       <section>
         <h2>General</h2>
         <div class="setting-row">
@@ -21,6 +76,7 @@
         </div>
       </section>
 
+      <!-- ── Silence Skipper ─────────────────────────────────────────────────── -->
       <section>
         <h2>Silence Skipper</h2>
         <div class="setting-row">
@@ -37,6 +93,7 @@
         </div>
       </section>
 
+      <!-- ── Adaptive Speed ─────────────────────────────────────────────────── -->
       <section>
         <h2>Adaptive Speed</h2>
         <div class="setting-row">
@@ -49,6 +106,7 @@
         </div>
       </section>
 
+      <!-- ── Advanced API ───────────────────────────────────────────────────── -->
       <section>
         <h2>Advanced API (Optional)</h2>
         <p class="desc">Enter a YouTube Data API v3 key to accurately detect Music videos for Auto-Mode.</p>
@@ -57,7 +115,7 @@
           <input type="password" id="opt-api-key" placeholder="AIzaSy...">
         </div>
       </section>
-      
+
       <div class="actions">
         <button id="btn-save" class="btn primary">Save Changes</button>
         <span id="save-status"></span>

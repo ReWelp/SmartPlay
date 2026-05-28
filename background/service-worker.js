@@ -38,27 +38,39 @@ const categoryCache = new Map();
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'TIME_SAVED_UPDATE') {
     const today = new Date().toISOString().split('T')[0];
-    chrome.storage.local.get(['savedStats'], (res) => {
-      let stats = res.savedStats || { date: today, silence: 0, speed: 0, filler: 0, week: 0 };
-      
+
+    // ── Read both savedStats (today) and lifetimeStats in one call ────────────
+    chrome.storage.local.get(['savedStats', 'lifetimeStats'], (res) => {
+      // ── Daily stats ──────────────────────────────────────────────────────────
+      let stats = res.savedStats || { date: today, silence: 0, speed: 0, filler: 0 };
+
+      // ── Lifetime stats — never reset, only ever grow ─────────────────────────
+      // Structure mirrors savedStats but has no `date` field.
+      let lifetime = res.lifetimeStats || { silence: 0, speed: 0, filler: 0 };
+
       if (stats.date !== today) {
-        // Reset daily, accumulate weekly
-        stats.week += (stats.silence + stats.speed + stats.filler);
-        stats.date = today;
+        // Day rolled over → flush today's totals into lifetime before resetting.
+        lifetime.silence += stats.silence;
+        lifetime.speed   += stats.speed;
+        lifetime.filler  += stats.filler;
+
+        // Reset daily counters.
+        stats.date    = today;
         stats.silence = 0;
-        stats.speed = 0;
-        stats.filler = 0;
+        stats.speed   = 0;
+        stats.filler  = 0;
       }
-      
-      if (msg.source === 'silence') stats.silence += msg.secondsSaved;
-      if (msg.source === 'speed') stats.speed += msg.secondsSaved;
-      if (msg.source === 'filler') stats.filler += msg.secondsSaved;
-      
-      chrome.storage.local.set({ savedStats: stats });
+
+      // Increment the source bucket in both today and lifetime.
+      if (msg.source === 'silence') { stats.silence += msg.secondsSaved; lifetime.silence += msg.secondsSaved; }
+      if (msg.source === 'speed')   { stats.speed   += msg.secondsSaved; lifetime.speed   += msg.secondsSaved; }
+      if (msg.source === 'filler')  { stats.filler  += msg.secondsSaved; lifetime.filler  += msg.secondsSaved; }
+
+      chrome.storage.local.set({ savedStats: stats, lifetimeStats: lifetime });
     });
     return true;
   }
-  
+
   if (msg.type === 'GET_VIDEO_CATEGORY') {
     if (categoryCache.has(msg.videoId)) {
       sendResponse({ categoryId: categoryCache.get(msg.videoId) });

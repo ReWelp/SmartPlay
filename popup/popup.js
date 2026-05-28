@@ -2,8 +2,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const elements = {
     globalToggle: document.getElementById('global-on'),
     timeSavedText: document.getElementById('time-saved-text'),
+    timeSavedLifetime: document.getElementById('time-saved-lifetime'),
     modePills: document.querySelectorAll('.mode-pill'),
-    
+
     silenceCard: document.getElementById('silence-card'),
     silenceToggle: document.getElementById('silence-toggle'),
     transFade: document.getElementById('trans-fade'),
@@ -12,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     thresholdVal: document.getElementById('threshold-val'),
     liveMeter: document.getElementById('live-meter'),
     liveVal: document.getElementById('live-val'),
-    
+
     speedCard: document.getElementById('speed-card'),
     speedToggle: document.getElementById('speed-toggle'),
     liveSpeedVal: document.getElementById('live-speed-val'),
@@ -22,7 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     maxSpeedVal: document.getElementById('max-speed-val'),
     minSpeedSlider: document.getElementById('min-speed-slider'),
     minSpeedVal: document.getElementById('min-speed-val'),
-    
+
     smartCard: document.getElementById('smart-card'),
     smartHeader: document.getElementById('smart-header'),
     fillerToggle: document.getElementById('filler-toggle'),
@@ -30,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     autopauseToggle: document.getElementById('autopause-toggle'),
     keywordInput: document.getElementById('keyword-input'),
     keywordGo: document.getElementById('keyword-go'),
-    
+
     btnSettings: document.getElementById('btn-settings'),
     btnSaveChannel: document.getElementById('btn-save-channel'),
     btnHelp: document.getElementById('btn-help'),
@@ -45,63 +46,88 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateUIFromSettings();
   });
 
-  // Formats and renders the time-saved counter.
+  // ── Shared time formatter ─────────────────────────────────────────────────
+  // Converts a raw millisecond value into a human-readable "Xm Ys ZZZms" string.
+  function formatMs(ms) {
+    const mins = Math.floor(ms / 60000);
+    const secs = Math.floor((ms % 60000) / 1000);
+    const msec = Math.floor(ms % 1000);
+    return `${mins}m ${secs}s ${String(msec).padStart(3, '0')}ms`;
+  }
+
+  // Converts seconds (possibly fractional) to ms for display.
+  function secsToMs(s) { return (s || 0) * 1000; }
+
+  // ── Today counter ─────────────────────────────────────────────────────────
   // extraMs = live buffered ms from content script (not yet flushed to storage).
   function updateTimeSaved(extraMs = 0) {
     chrome.storage.local.get(['savedStats'], (res) => {
       const saved = res.savedStats || { silence: 0, speed: 0, filler: 0 };
-      const totalMs = (saved.silence + saved.speed + saved.filler) * 1000 + extraMs;
-      const mins = Math.floor(totalMs / 60000);
-      const secs = Math.floor((totalMs % 60000) / 1000);
-      const ms   = Math.floor(totalMs % 1000);
-      elements.timeSavedText.innerText =
-        `⏱ ${mins}m ${secs}s ${String(ms).padStart(3, '0')}ms saved today`;
+      const totalMs = secsToMs(saved.silence) + secsToMs(saved.speed) + secsToMs(saved.filler) + extraMs;
+      elements.timeSavedText.innerText = `⏱ ${formatMs(totalMs)} saved today`;
     });
   }
 
-  // Request live stats from content script
+  // ── Lifetime counter ──────────────────────────────────────────────────────
+  // Reads from the lifetimeStats bucket which is written by the service worker
+  // whenever TIME_SAVED_UPDATE fires.  Never resets.
+  function updateLifetimeSaved() {
+    chrome.storage.local.get(['lifetimeStats'], (res) => {
+      const lt = res.lifetimeStats || { silence: 0, speed: 0, filler: 0 };
+      const totalMs = secsToMs(lt.silence) + secsToMs(lt.speed) + secsToMs(lt.filler);
+      elements.timeSavedLifetime.innerText = `♾ ${formatMs(totalMs)} lifetime saved`;
+    });
+  }
+
+  // ── Request live stats from content script ────────────────────────────────
   function fetchStats() {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0] && tabs[0].url && tabs[0].url.includes('youtube.com/watch')) {
         elements.banner.classList.add('hidden');
         chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_STATUS' }, (response) => {
           if (chrome.runtime.lastError || !response) {
-            updateTimeSaved(0); // fallback: read storage only
+            updateTimeSaved(0);
+            updateLifetimeSaved();
             return;
           }
-          
+
           if (response.settings) {
             settings = response.settings;
             updateUIFromSettings();
           }
-          
+
           if (response.stats) {
             updateLiveStats(response.stats);
-            // Pass the live unflushed buffer so the counter ticks continuously
+            // Pass the live unflushed speed buffer so the today counter ticks
             updateTimeSaved(response.stats.bufferedMs || 0);
           }
+
+          // Lifetime does not depend on live buffer — just pull from storage
+          updateLifetimeSaved();
         });
       } else {
         elements.banner.classList.remove('hidden');
-        updateTimeSaved(0); // still show saved time even off YouTube
+        updateTimeSaved(0);
+        updateLifetimeSaved();
       }
     });
   }
 
-  // Initial paint — show stored total immediately while first message round-trips
+  // Initial paint — show stored totals immediately while first message round-trips
   updateTimeSaved(0);
+  updateLifetimeSaved();
   fetchStats();
   setInterval(fetchStats, 100); // 100ms — smooth live counter
 
-  // Helpers
+  // ── Settings helpers ──────────────────────────────────────────────────────
   function sendUpdate(key, value) {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]) {
         chrome.tabs.sendMessage(tabs[0].id, { type: 'UPDATE_SETTING', key, value }).catch(() => {});
       }
     });
-    
-    // Also save to storage
+
+    // Also persist to storage
     chrome.storage.sync.get(null, (items) => {
       const keys = key.split('.');
       let current = items;
@@ -114,18 +140,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function updateUIFromSettings() {
-    if (!settings.enabled) return; // Might be undefined initially
+    if (!settings.enabled) return;
 
     elements.globalToggle.checked = settings.enabled;
-    
+
     elements.modePills.forEach(p => p.classList.remove('active'));
     document.querySelector(`.mode-pill[data-mode="${settings.mode}"]`)?.classList.add('active');
-    
+
     // Silence Skipper
     elements.silenceToggle.checked = settings.silenceSkipper.enabled;
     if (settings.silenceSkipper.enabled && settings.enabled) elements.silenceCard.classList.remove('off');
     else elements.silenceCard.classList.add('off');
-    
+
     if (settings.silenceSkipper.transition === 'fade') {
       elements.transFade.classList.add('active');
       elements.transHard.classList.remove('active');
@@ -137,12 +163,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       elements.thresholdSlider.value = settings.silenceSkipper.thresholdDb;
       elements.thresholdVal.innerText = `${settings.silenceSkipper.thresholdDb} dB`;
     }
-    
+
     // Adaptive Speed
     if (document.activeElement !== elements.speedToggle) elements.speedToggle.checked = settings.adaptiveSpeed.enabled;
     if (settings.adaptiveSpeed.enabled && settings.enabled) elements.speedCard.classList.remove('off');
     else elements.speedCard.classList.add('off');
-    
+
     if (settings.adaptiveSpeed.mode === 'adaptive') {
       elements.speedAdaptive.classList.add('active');
       elements.speedMaxBtn.classList.remove('active');
@@ -150,7 +176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       elements.speedMaxBtn.classList.add('active');
       elements.speedAdaptive.classList.remove('active');
     }
-    
+
     if (document.activeElement !== elements.maxSpeedSlider) {
       elements.maxSpeedSlider.value = settings.adaptiveSpeed.maxSpeed;
       elements.maxSpeedVal.innerText = `${Number(settings.adaptiveSpeed.maxSpeed).toFixed(2)}x`;
@@ -159,7 +185,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       elements.minSpeedSlider.value = settings.adaptiveSpeed.minSpeed;
       elements.minSpeedVal.innerText = `${Number(settings.adaptiveSpeed.minSpeed).toFixed(2)}x`;
     }
-    
+
     // Smart Features
     elements.fillerToggle.checked = settings.smartFeatures.fillerTrimmer;
     elements.chapterToggle.checked = settings.smartFeatures.chapterNavigator;
@@ -167,25 +193,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function updateLiveStats(stats) {
-    // Speed
     elements.liveSpeedVal.innerHTML = `${Number(stats.speed).toFixed(2)}x <span class="dot"></span>`;
-    
-    // Audio Level Meter
+
     let db = stats.audioLevel;
     if (db === -Infinity) db = -100;
     elements.liveVal.innerText = `${Math.round(db)} dB`;
-    
-    // Map -70 to -20 dB to 0% to 100% width
-    const minDb = -70;
-    const maxDb = -20;
+
+    const minDb = -70, maxDb = -20;
     let pct = ((db - minDb) / (maxDb - minDb)) * 100;
     pct = Math.max(0, Math.min(100, pct));
     elements.liveMeter.style.width = `${pct}%`;
   }
 
-  // Events
+  // ── Event bindings ────────────────────────────────────────────────────────
   elements.globalToggle.addEventListener('change', (e) => sendUpdate('enabled', e.target.checked));
-  
+
   elements.modePills.forEach(p => {
     p.addEventListener('click', () => sendUpdate('mode', p.dataset.mode));
   });
@@ -193,7 +215,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   elements.silenceToggle.addEventListener('change', (e) => sendUpdate('silenceSkipper.enabled', e.target.checked));
   elements.transFade.addEventListener('click', () => sendUpdate('silenceSkipper.transition', 'fade'));
   elements.transHard.addEventListener('click', () => sendUpdate('silenceSkipper.transition', 'hard'));
-  
+
   elements.thresholdSlider.addEventListener('input', (e) => {
     elements.thresholdVal.innerText = `${e.target.value} dB`;
   });
@@ -204,10 +226,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   elements.speedToggle.addEventListener('change', (e) => sendUpdate('adaptiveSpeed.enabled', e.target.checked));
   elements.speedAdaptive.addEventListener('click', () => sendUpdate('adaptiveSpeed.mode', 'adaptive'));
   elements.speedMaxBtn.addEventListener('click', () => sendUpdate('adaptiveSpeed.mode', 'max_always'));
-  
+
   elements.maxSpeedSlider.addEventListener('input', (e) => elements.maxSpeedVal.innerText = `${Number(e.target.value).toFixed(2)}x`);
   elements.maxSpeedSlider.addEventListener('change', (e) => sendUpdate('adaptiveSpeed.maxSpeed', Number(e.target.value)));
-  
+
   elements.minSpeedSlider.addEventListener('input', (e) => elements.minSpeedVal.innerText = `${Number(e.target.value).toFixed(2)}x`);
   elements.minSpeedSlider.addEventListener('change', (e) => sendUpdate('adaptiveSpeed.minSpeed', Number(e.target.value)));
 
@@ -222,7 +244,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs[0]) {
           chrome.tabs.sendMessage(tabs[0].id, { type: 'KEYWORD_JUMP', keyword: kw }, (res) => {
-            if (res && res.success) elements.keywordInput.value = ''; // clear on success
+            if (res && res.success) elements.keywordInput.value = '';
           });
         }
       });
@@ -230,11 +252,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   elements.btnSettings.addEventListener('click', () => chrome.runtime.openOptionsPage());
-  
+
   elements.btnHelp.addEventListener('click', () => {
     chrome.tabs.create({ url: 'https://github.com/ReWelp/SmartPlay' });
   });
-  
+
   elements.btnSaveChannel.addEventListener('click', () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]) {

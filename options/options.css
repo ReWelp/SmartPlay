@@ -93,3 +93,82 @@ input[type=checkbox] {
   color: #00E5A0;
   font-weight: 500;
 }
+
+/* ── Stats Section ──────────────────────────────────────────────────────────── */
+.stats-section {
+  background: #1A1A1A;
+  border: 1px solid #2E2E2E;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.stats-section h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 18px;
+  color: #F1F1F1;
+}
+
+/* Label above each time period group ("⏱ Today" / "♾ Lifetime") */
+.stats-block-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #909090;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* Four-column responsive grid of stat cards */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 560px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Individual card */
+.stat-card {
+  background: #111;
+  border: 1px solid #2E2E2E;
+  border-radius: 8px;
+  padding: 16px 12px;
+  text-align: center;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.stat-card:hover {
+  border-color: #00E5A0;
+  transform: translateY(-2px);
+}
+
+/* Today cards — brighter accent */
+.stat-card .stat-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: #00E5A0;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+/* Lifetime cards — slightly muted */
+.stat-card--lifetime .stat-value {
+  color: #00b07a;
+}
+
+.stat-name {
+  font-size: 11px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Thin separator between Today and Lifetime blocks */
+.stats-divider {
+  height: 1px;
+  background: #2E2E2E;
+  margin: 20px 0;
+}
