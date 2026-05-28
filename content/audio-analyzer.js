@@ -1,7 +1,10 @@
 class AudioAnalyzer {
   constructor(videoElement) {
     this.videoElement = videoElement;
-    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!window._smartPlayAudioCtx) {
+      window._smartPlayAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    this.ctx = window._smartPlayAudioCtx;
     this.analyser = this.ctx.createAnalyser();
     this.analyser.fftSize = 2048;
     this.analyser.smoothingTimeConstant = 0.8;
@@ -24,9 +27,11 @@ class AudioAnalyzer {
   
   _connect() {
     try {
-      // Find existing source if any (Web Audio API limitation workaround if needed)
-      // For now, create a new one
-      this.source = this.ctx.createMediaElementSource(this.videoElement);
+      if (!this.videoElement._smartPlaySource) {
+        this.videoElement._smartPlaySource = this.ctx.createMediaElementSource(this.videoElement);
+      }
+      this.source = this.videoElement._smartPlaySource;
+      try { this.source.disconnect(); } catch (e) {} // clean up previous routing
       this.source.connect(this.analyser);
       this.analyser.connect(this.ctx.destination);
       this.isConnected = true;
@@ -106,9 +111,10 @@ class AudioAnalyzer {
   destroy() {
     this.stopLoop();
     if (this.source) {
-      this.source.disconnect();
+      try { this.source.disconnect(); } catch (e) {}
+      this.source.connect(this.ctx.destination); // Route audio back to speakers directly
     }
-    this.analyser.disconnect();
-    this.ctx.close();
+    try { this.analyser.disconnect(); } catch (e) {}
+    // Do not close this.ctx since it's shared/global!
   }
 }

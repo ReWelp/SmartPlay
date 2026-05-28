@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const elements = {
     globalToggle: document.getElementById('global-on'),
     timeSavedText: document.getElementById('time-saved-text'),
-    timeSavedLifetime: document.getElementById('time-saved-lifetime'),
     modePills: document.querySelectorAll('.mode-pill'),
 
     silenceCard: document.getElementById('silence-card'),
@@ -68,17 +67,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // ── Lifetime counter ──────────────────────────────────────────────────────
-  // Reads from the lifetimeStats bucket which is written by the service worker
-  // whenever TIME_SAVED_UPDATE fires.  Never resets.
-  function updateLifetimeSaved() {
-    chrome.storage.local.get(['lifetimeStats'], (res) => {
-      const lt = res.lifetimeStats || { silence: 0, speed: 0, filler: 0 };
-      const totalMs = secsToMs(lt.silence) + secsToMs(lt.speed) + secsToMs(lt.filler);
-      elements.timeSavedLifetime.innerText = `♾ ${formatMs(totalMs)} lifetime saved`;
-    });
-  }
-
   // ── Request live stats from content script ────────────────────────────────
   function fetchStats() {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -87,7 +75,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_STATUS' }, (response) => {
           if (chrome.runtime.lastError || !response) {
             updateTimeSaved(0);
-            updateLifetimeSaved();
             return;
           }
 
@@ -101,21 +88,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Pass the live unflushed speed buffer so the today counter ticks
             updateTimeSaved(response.stats.bufferedMs || 0);
           }
-
-          // Lifetime does not depend on live buffer — just pull from storage
-          updateLifetimeSaved();
         });
       } else {
         elements.banner.classList.remove('hidden');
         updateTimeSaved(0);
-        updateLifetimeSaved();
       }
     });
   }
 
   // Initial paint — show stored totals immediately while first message round-trips
   updateTimeSaved(0);
-  updateLifetimeSaved();
   fetchStats();
   setInterval(fetchStats, 100); // 100ms — smooth live counter
 

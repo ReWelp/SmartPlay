@@ -22,15 +22,7 @@ body {
 .time-saved {
   font-size: 12px;
   color: #00E5A0;
-  margin-bottom: 4px;
-}
-
-/* Lifetime line sits directly beneath today, slightly subdued */
-.time-saved-lifetime {
-  font-size: 11px;
-  color: #00b07a;
-  margin-bottom: 14px;
-  opacity: 0.80;
+  margin-bottom: 16px;
 }
 
 /* Mode Bar */

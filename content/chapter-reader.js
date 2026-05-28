@@ -1,10 +1,22 @@
 class ChapterReader {
   constructor() {
     this.chapters = [];
+
+    // ── Retry throttle ───────────────────────────────────────────────────────
+    // getChapters() is called up to 10× per second via the popup's GET_STATUS
+    // poll.  Without throttling, readChapters() (and its console.log) fire
+    // hundreds of times per minute.
+    //
+    // Strategy: once chapters are found we set _resolvedOnce = true and stop
+    // re-scanning.  Until they are found we wait at least RETRY_DELAY_MS
+    // between actual scan attempts.
+    this._resolvedOnce  = false;
+    this._lastAttemptTs = 0;       // performance.now() of last readChapters call
+    this._RETRY_DELAY   = 4000;    // ms — re-scan at most every 4 s
   }
 
   // ── Time string → seconds ──────────────────────────────────────────────────
-  // Handles both mm:ss and hh:mm:ss formats.
+  // Handles mm:ss (e.g. "4:20") and hh:mm:ss (e.g. "1:04:20").
   static _timeToSeconds(timeStr) {
     const parts = timeStr.split(':').map(Number).reverse();
     let secs = 0;
@@ -14,10 +26,10 @@ class ChapterReader {
     return secs;
   }
 
-  // ── Tier 1: structured DOM elements ──────────────────────────────────────
+  // ── Tier 1: structured DOM elements ───────────────────────────────────────
   // YouTube renders chapter markers in ytd-macro-markers-list-item-renderer
-  // elements, BUT only after the user expands the description or the sidebar
-  // renders them. Returns [] when the panel hasn't been mounted yet.
+  // ONLY after the user opens the description panel or the sidebar renders.
+  // Returns [] when the panel hasn't been mounted yet.
   _readFromDOM() {
     const panels = document.querySelectorAll('ytd-macro-markers-list-item-renderer');
     if (panels.length === 0) return [];
@@ -37,31 +49,28 @@ class ChapterReader {
     return chapters.sort((a, b) => a.seconds - b.seconds);
   }
 
-  // ── Tier 2: description text regex fallback ───────────────────────────────
+  // ── Tier 2: description text regex fallback ────────────────────────────────
   //
-  // When the chapter panel isn't in the DOM yet, we scrape the raw text of
-  // the video description and parse chapter lines with a regex.
+  // When the chapter panel isn't in the DOM, we scrape the raw text of the
+  // video description and parse chapter lines with a regex.
   //
   // The regex captures two groups:
-  //   Group 1 — timestamp:  \d{1,2}:\d{2}(:\d{2})?
-  //     Matches mm:ss (e.g. "4:20") or hh:mm:ss (e.g. "1:04:20").
-  //     The leading \d{1,2} allows single-digit minutes (0:30) as well as
-  //     two-digit hours (10:30:00) without over-matching random numbers.
+  //   Group 1 — timestamp:  \d{1,2}:\d{2}(?::\d{2})?
+  //     Matches mm:ss ("4:20") or hh:mm:ss ("1:04:20").
+  //     Leading \d{1,2} allows single-digit minutes (0:30) and two-digit
+  //     hours (10:30:00) without over-matching plain numbers.
   //
-  //   Separator — [-–—|]? — optional dash / en-dash / em-dash / pipe.
-  //     Creators use many conventions: "0:00 - Intro", "0:00 – Intro",
-  //     "0:00 Intro", "0:00 | Intro". The separator is optional so we
-  //     handle the no-separator case too.
+  //   Optional separator — [-–—|]? — dash / en-dash / em-dash / pipe, all
+  //     optional so we handle every creator convention:
+  //       "0:00 - Intro"   "0:00 – Intro"   "0:00 Intro"   "0:00 | Intro"
   //
   //   Group 2 — title:  (.+)
-  //     Everything after the timestamp and separator on the same line.
-  //     We trim whitespace after extraction.
+  //     Everything after the timestamp + separator on the same line.  We trim
+  //     whitespace after extraction.
   //
-  // Lines that contain a timestamp but whose "title" part is empty or
-  // purely numeric are discarded as false positives.
+  // Lines whose "title" is empty or purely numeric are discarded as false
+  // positives (e.g. bare view counts that happen to contain a colon).
   _readFromDescription() {
-    // Try multiple selectors in preference order (YouTube DOM varies by
-    // country, experiment bucket, and whether the page has been SPA-navigated).
     const descEl =
       document.querySelector('#description-inline-expander') ||
       document.querySelector('ytd-text-inline-expander')     ||
@@ -72,13 +81,12 @@ class ChapterReader {
     const rawText = descEl.innerText || descEl.textContent || '';
     if (!rawText.trim()) return [];
 
-    // ── Chapter-line regex ───────────────────────────────────────────────────
-    // /^                       — anchored to start of line (multiline flag)
-    //  \s*                     — optional leading whitespace (indented lists)
-    //  (\d{1,2}:\d{2}(?::\d{2})?)  — timestamp group (mm:ss or hh:mm:ss)
-    //  \s*[-–—|]?\s*           — optional separator with surrounding spaces
-    //  (.+)                    — title group: rest of the line (trimmed below)
-    // /gm                      — global + multiline so we process every line
+    // /^                            — anchored to line start (m flag)
+    //  \s*                          — optional leading whitespace
+    //  (\d{1,2}:\d{2}(?::\d{2})?)  — timestamp group
+    //  \s*[-–—|]?\s*               — optional separator
+    //  (.+)                         — title group
+    // /gm                           — global + multiline
     const CHAPTER_RX = /^\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*[-–—|]?\s*(.+)/gm;
 
     const chapters = [];
@@ -87,7 +95,7 @@ class ChapterReader {
       const timeStr = match[1].trim();
       const title   = match[2].trim();
 
-      // Discard lines where the "title" is just another number (false positive).
+      // Discard lines where the "title" is just another number (false positive)
       if (!title || /^\d+$/.test(title)) continue;
 
       chapters.push({
@@ -97,7 +105,7 @@ class ChapterReader {
       });
     }
 
-    // De-duplicate: same timestamp appearing twice (copy-paste artifacts).
+    // De-duplicate: same timestamp appearing twice (copy-paste artifacts)
     const seen = new Set();
     return chapters
       .filter(c => {
@@ -108,18 +116,19 @@ class ChapterReader {
       .sort((a, b) => a.seconds - b.seconds);
   }
 
-  // ── Public: readChapters() ────────────────────────────────────────────────
-  // Multi-tier with automatic fallback:
-  //   Tier 1 → structured DOM (best accuracy, requires panel to be mounted)
-  //   Tier 2 → description regex  (always available, slightly less reliable)
+  // ── Public: readChapters() ─────────────────────────────────────────────────
+  // Multi-tier with automatic fallback.  Caller (getChapters) handles the
+  // retry-throttle so this method can focus purely on scraping logic.
   readChapters() {
+    this._lastAttemptTs = performance.now();
     this.chapters = [];
 
     // Tier 1
     const domChapters = this._readFromDOM();
     if (domChapters.length > 0) {
       console.log(`[SmartPlay] ChapterReader: ${domChapters.length} chapters via DOM`);
-      this.chapters = domChapters;
+      this.chapters     = domChapters;
+      this._resolvedOnce = true;
       return this.chapters;
     }
 
@@ -127,19 +136,36 @@ class ChapterReader {
     const descChapters = this._readFromDescription();
     if (descChapters.length > 0) {
       console.log(`[SmartPlay] ChapterReader: ${descChapters.length} chapters via description regex`);
-      this.chapters = descChapters;
+      this.chapters      = descChapters;
+      this._resolvedOnce = true;
       return this.chapters;
     }
 
-    console.log('[SmartPlay] ChapterReader: no chapters found');
+    // Log only once per actual attempt, not once per getChapters() call.
+    console.log('[SmartPlay] ChapterReader: no chapters found (will retry in 4s)');
     return this.chapters;
   }
 
+  // ── Public: getChapters() ──────────────────────────────────────────────────
+  // Called by index.js GET_STATUS handler up to 10× per second.
+  //
+  // Throttle rules:
+  //   • Once chapters are found (_resolvedOnce), return them immediately — no
+  //     more scanning needed.
+  //   • Before they are found, allow a new scan only after _RETRY_DELAY ms
+  //     have elapsed since the last attempt.  This eliminates the log spam
+  //     that previously fired hundreds of times per minute.
   getChapters() {
-    return this.chapters.length > 0 ? this.chapters : this.readChapters();
+    if (this._resolvedOnce) return this.chapters;
+
+    const elapsed = performance.now() - this._lastAttemptTs;
+    if (elapsed < this._RETRY_DELAY) return this.chapters; // too soon — wait
+
+    return this.readChapters();
   }
 
   destroy() {
-    this.chapters = [];
+    this.chapters      = [];
+    this._resolvedOnce = false;
   }
 }
