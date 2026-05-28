@@ -2,17 +2,7 @@ class ChapterReader {
   constructor() {
     this.chapters = [];
 
-    // ── Retry throttle ───────────────────────────────────────────────────────
-    // getChapters() is called up to 10× per second via the popup's GET_STATUS
-    // poll.  Without throttling, readChapters() (and its console.log) fire
-    // hundreds of times per minute.
-    //
-    // Strategy: once chapters are found we set _resolvedOnce = true and stop
-    // re-scanning.  Until they are found we wait at least RETRY_DELAY_MS
-    // between actual scan attempts.
-    this._resolvedOnce  = false;
-    this._lastAttemptTs = 0;       // performance.now() of last readChapters call
-    this._RETRY_DELAY   = 4000;    // ms — re-scan at most every 4 s
+    this.hasAttemptedRead = false;
   }
 
   // ── Time string → seconds ──────────────────────────────────────────────────
@@ -117,10 +107,8 @@ class ChapterReader {
   }
 
   // ── Public: readChapters() ─────────────────────────────────────────────────
-  // Multi-tier with automatic fallback.  Caller (getChapters) handles the
-  // retry-throttle so this method can focus purely on scraping logic.
   readChapters() {
-    this._lastAttemptTs = performance.now();
+    this.hasAttemptedRead = true;
     this.chapters = [];
 
     // Tier 1
@@ -128,7 +116,6 @@ class ChapterReader {
     if (domChapters.length > 0) {
       console.log(`[SmartPlay] ChapterReader: ${domChapters.length} chapters via DOM`);
       this.chapters     = domChapters;
-      this._resolvedOnce = true;
       return this.chapters;
     }
 
@@ -137,35 +124,23 @@ class ChapterReader {
     if (descChapters.length > 0) {
       console.log(`[SmartPlay] ChapterReader: ${descChapters.length} chapters via description regex`);
       this.chapters      = descChapters;
-      this._resolvedOnce = true;
       return this.chapters;
     }
 
-    // Log only once per actual attempt, not once per getChapters() call.
-    console.log('[SmartPlay] ChapterReader: no chapters found (will retry in 4s)');
+    console.log('[SmartPlay] ChapterReader: no chapters found');
     return this.chapters;
   }
 
   // ── Public: getChapters() ──────────────────────────────────────────────────
-  // Called by index.js GET_STATUS handler up to 10× per second.
-  //
-  // Throttle rules:
-  //   • Once chapters are found (_resolvedOnce), return them immediately — no
-  //     more scanning needed.
-  //   • Before they are found, allow a new scan only after _RETRY_DELAY ms
-  //     have elapsed since the last attempt.  This eliminates the log spam
-  //     that previously fired hundreds of times per minute.
   getChapters() {
-    if (this._resolvedOnce) return this.chapters;
-
-    const elapsed = performance.now() - this._lastAttemptTs;
-    if (elapsed < this._RETRY_DELAY) return this.chapters; // too soon — wait
-
-    return this.readChapters();
+    if (this.chapters.length === 0 && !this.hasAttemptedRead) {
+      this.readChapters();
+    }
+    return this.chapters;
   }
 
   destroy() {
-    this.chapters      = [];
-    this._resolvedOnce = false;
+    this.chapters         = [];
+    this.hasAttemptedRead = false;
   }
 }
