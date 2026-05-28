@@ -1,8 +1,8 @@
 class ChapterReader {
   constructor() {
     this.chapters = [];
-
-    this.hasAttemptedRead = false;
+    this.readAttempts = 0;
+    this.MAX_ATTEMPTS = 10;
   }
 
   // ── Time string → seconds ──────────────────────────────────────────────────
@@ -108,7 +108,7 @@ class ChapterReader {
 
   // ── Public: readChapters() ─────────────────────────────────────────────────
   readChapters() {
-    this.hasAttemptedRead = true;
+    this.readAttempts++;
     this.chapters = [];
 
     // Tier 1
@@ -116,6 +116,7 @@ class ChapterReader {
     if (domChapters.length > 0) {
       console.log(`[SmartPlay] ChapterReader: ${domChapters.length} chapters via DOM`);
       this.chapters     = domChapters;
+      this.readAttempts = this.MAX_ATTEMPTS;
       return this.chapters;
     }
 
@@ -124,23 +125,24 @@ class ChapterReader {
     if (descChapters.length > 0) {
       console.log(`[SmartPlay] ChapterReader: ${descChapters.length} chapters via description regex`);
       this.chapters      = descChapters;
+      this.readAttempts = this.MAX_ATTEMPTS;
       return this.chapters;
     }
 
-    console.log('[SmartPlay] ChapterReader: no chapters found');
+    console.log(`[SmartPlay] ChapterReader: no chapters found (Attempt ${this.readAttempts}/${this.MAX_ATTEMPTS})`);
     return this.chapters;
   }
 
   // ── Public: getChapters() ──────────────────────────────────────────────────
   getChapters() {
-    if (this.chapters.length === 0 && !this.hasAttemptedRead) {
+    if (this.chapters.length === 0 && this.readAttempts < this.MAX_ATTEMPTS) {
       this.readChapters();
     }
     return this.chapters;
   }
 
   destroy() {
-    this.chapters         = [];
-    this.hasAttemptedRead = false;
+    this.chapters     = [];
+    this.readAttempts = 0;
   }
 }
