@@ -51,6 +51,11 @@ class TimeTracker {
     }
   }
   
+  getBufferedMs() {
+    // Returns the live unflushed sub-second speed savings (ms)
+    return this.speedSavedBuffer;
+  }
+
   destroy() {
     window.removeEventListener('smartplay:silence-skipped', this.silenceHandler);
     window.removeEventListener('smartplay:filler-trimmed', this.fillerHandler);

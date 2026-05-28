@@ -147,7 +147,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     const stats = {
       speed: modules.speedController ? modules.speedController.getCurrentSpeed() : 1.0,
       audioLevel: modules.analyzer ? modules.analyzer.getDecibelLevel() : -Infinity,
-      chapters: modules.chapterReader ? modules.chapterReader.getChapters() : []
+      chapters: modules.chapterReader ? modules.chapterReader.getChapters() : [],
+      bufferedMs: modules.timeTracker ? modules.timeTracker.getBufferedMs() : 0
     };
     sendResponse({ settings, stats });
     return true;

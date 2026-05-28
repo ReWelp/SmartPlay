@@ -45,41 +45,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateUIFromSettings();
   });
 
+  // Formats and renders the time-saved counter.
+  // extraMs = live buffered ms from content script (not yet flushed to storage).
+  function updateTimeSaved(extraMs = 0) {
+    chrome.storage.local.get(['savedStats'], (res) => {
+      const saved = res.savedStats || { silence: 0, speed: 0, filler: 0 };
+      const totalMs = (saved.silence + saved.speed + saved.filler) * 1000 + extraMs;
+      const mins = Math.floor(totalMs / 60000);
+      const secs = Math.floor((totalMs % 60000) / 1000);
+      const ms   = Math.floor(totalMs % 1000);
+      elements.timeSavedText.innerText =
+        `⏱ ${mins}m ${secs}s ${String(ms).padStart(3, '0')}ms saved today`;
+    });
+  }
+
   // Request live stats from content script
   function fetchStats() {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0] && tabs[0].url && tabs[0].url.includes('youtube.com/watch')) {
         elements.banner.classList.add('hidden');
         chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_STATUS' }, (response) => {
-          if (chrome.runtime.lastError || !response) return;
+          if (chrome.runtime.lastError || !response) {
+            updateTimeSaved(0); // fallback: read storage only
+            return;
+          }
           
           if (response.settings) {
-            settings = response.settings; // content script might have applied channel mode/heuristics
+            settings = response.settings;
             updateUIFromSettings();
           }
           
           if (response.stats) {
             updateLiveStats(response.stats);
+            // Pass the live unflushed buffer so the counter ticks continuously
+            updateTimeSaved(response.stats.bufferedMs || 0);
           }
         });
       } else {
         elements.banner.classList.remove('hidden');
+        updateTimeSaved(0); // still show saved time even off YouTube
       }
     });
   }
 
+  // Initial paint — show stored total immediately while first message round-trips
+  updateTimeSaved(0);
   fetchStats();
-  setInterval(fetchStats, 500);
-
-  // Load time saved from local storage
-  chrome.storage.local.get(['savedStats'], (res) => {
-    if (res.savedStats) {
-      const totalSecs = Math.floor(res.savedStats.silence + res.savedStats.speed + res.savedStats.filler);
-      const mins = Math.floor(totalSecs / 60);
-      const secs = totalSecs % 60;
-      elements.timeSavedText.innerText = `⏱ ${mins}m ${secs}s saved today`;
-    }
-  });
+  setInterval(fetchStats, 100); // 100ms — smooth live counter
 
   // Helpers
   function sendUpdate(key, value) {
