@@ -1,0 +1,57 @@
+{
+  "manifest_version": 3,
+  "name": "SmartPlay",
+  "version": "1.0.0",
+  "description": "Intelligent YouTube playback — skip silence, adaptive speed, save time.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://www.googleapis.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/watch*"],
+      "js": [
+        "utils/constants.js",
+        "utils/storage.js",
+        "utils/messaging.js",
+        "content/audio-analyzer.js",
+        "content/silence-skipper.js",
+        "content/speed-controller.js",
+        "content/transcript-fetcher.js",
+        "content/filler-trimmer.js",
+        "content/chapter-reader.js",
+        "content/mode-detector.js",
+        "content/channel-memory.js",
+        "content/time-tracker.js",
+        "content/index.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  }
+}

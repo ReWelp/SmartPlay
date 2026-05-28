@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="header">
+    <div class="logo">⚡ SmartPlay</div>
+    <label class="toggle global-toggle">
+      <input type="checkbox" id="global-on">
+      <span class="slider"></span>
+    </label>
+    <div class="time-saved" id="time-saved-text">⏱ 0m 0s saved today</div>
+  </div>
+
+  <div class="mode-bar">
+    <button class="mode-pill active" data-mode="auto">Auto<span class="dot"></span></button>
+    <button class="mode-pill" data-mode="movie">🎬 Movie</button>
+    <button class="mode-pill" data-mode="music">🎵 Music</button>
+    <button class="mode-pill" data-mode="podcast">🎙 Podcast</button>
+    <button class="mode-pill" data-mode="lecture">🎓 Lecture</button>
+  </div>
+
+  <div class="card" id="silence-card">
+    <div class="card-header">
+      <span>Silence Skipper</span>
+      <label class="toggle">
+        <input type="checkbox" id="silence-toggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <span>Skip transition:</span>
+        <div class="segmented-control">
+          <button id="trans-fade" class="active">Fade</button>
+          <button id="trans-hard">Hard Cut</button>
+        </div>
+      </div>
+      <div class="row slider-row">
+        <span>Threshold</span>
+        <input type="range" id="threshold-slider" min="-70" max="-20" step="1">
+        <span id="threshold-val">-45 dB</span>
+      </div>
+      <div class="row meter-row">
+        <span>Live level:</span>
+        <div class="meter-bar-container">
+          <div class="meter-bar" id="live-meter"></div>
+        </div>
+        <span id="live-val">-Infinity dB</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="speed-card">
+    <div class="card-header">
+      <div class="speed-title">
+        <span>Adaptive Speed</span>
+        <span class="live-speed" id="live-speed-val">1.00x <span class="dot"></span></span>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="speed-toggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <span>Mode:</span>
+        <div class="segmented-control">
+          <button id="speed-adaptive" class="active">Adaptive</button>
+          <button id="speed-max">Max Always</button>
+        </div>
+      </div>
+      <div class="row slider-row">
+        <span>Max speed</span>
+        <input type="range" id="max-speed-slider" min="1.0" max="3.0" step="0.05">
+        <span id="max-speed-val">1.5x</span>
+      </div>
+      <div class="row slider-row">
+        <span>Min floor</span>
+        <input type="range" id="min-speed-slider" min="0.5" max="1.0" step="0.05">
+        <span id="min-speed-val">0.85x</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card collapsed" id="smart-card">
+    <div class="card-header clickable" id="smart-header">
+      <span>▼ Smart Features</span>
+    </div>
+    <div class="card-body smart-body">
+      <div class="row" title="Automatically skips over filler words like 'um', 'uh', and 'like' using the video's transcript.">
+        <span>Filler Words (um, uh) <span class="badge" id="filler-badge">0 trimmed</span></span>
+        <label class="toggle"><input type="checkbox" id="filler-toggle"><span class="slider"></span></label>
+      </div>
+      <div class="row" title="Shows chapter navigation markers and can auto-skip 'Sponsor' or 'Intro' chapters if detected.">
+        <span>Smart Chapters</span>
+        <label class="toggle"><input type="checkbox" id="chapter-toggle"><span class="slider"></span></label>
+      </div>
+      <div class="row" title="Automatically pauses the video when you switch away to another tab, and resumes when you return.">
+        <span>Auto-Pause on Tab Switch</span>
+        <label class="toggle"><input type="checkbox" id="autopause-toggle"><span class="slider"></span></label>
+      </div>
+      <div class="row">
+        <input type="text" id="keyword-input" placeholder="Jump to keyword...">
+        <button id="keyword-go">Go →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <button class="ghost-btn" id="btn-settings">⚙ Settings</button>
+    <button class="ghost-btn" id="btn-save-channel">📌 Save for channel</button>
+    <button class="ghost-btn" id="btn-help">❓</button>
+  </div>
+  
+  <div id="banner" class="hidden">Open a YouTube video to use SmartPlay</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

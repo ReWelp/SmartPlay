@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SmartPlay Settings</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚡ SmartPlay Settings</h1>
+    </header>
+    
+    <main>
+      <section>
+        <h2>General</h2>
+        <div class="setting-row">
+          <label>Enable SmartPlay Globally</label>
+          <input type="checkbox" id="opt-global-enabled">
+        </div>
+      </section>
+
+      <section>
+        <h2>Silence Skipper</h2>
+        <div class="setting-row">
+          <label>Min Silence Duration (seconds)</label>
+          <input type="number" id="opt-min-silence" step="0.1" min="0.1">
+        </div>
+        <div class="setting-row">
+          <label>Max Silence Duration (seconds)</label>
+          <input type="number" id="opt-max-silence" step="1" min="1">
+        </div>
+        <div class="setting-row">
+          <label>Fade Duration (ms)</label>
+          <input type="number" id="opt-fade-duration" step="10" min="50">
+        </div>
+      </section>
+
+      <section>
+        <h2>Adaptive Speed</h2>
+        <div class="setting-row">
+          <label>Ramp Interval (seconds)</label>
+          <input type="number" id="opt-ramp-interval" step="1" min="1">
+        </div>
+        <div class="setting-row">
+          <label>Base Speed</label>
+          <input type="number" id="opt-base-speed" step="0.05" min="0.5" max="2.0">
+        </div>
+      </section>
+
+      <section>
+        <h2>Advanced API (Optional)</h2>
+        <p class="desc">Enter a YouTube Data API v3 key to accurately detect Music videos for Auto-Mode.</p>
+        <div class="setting-row">
+          <label>API Key</label>
+          <input type="password" id="opt-api-key" placeholder="AIzaSy...">
+        </div>
+      </section>
+      
+      <div class="actions">
+        <button id="btn-save" class="btn primary">Save Changes</button>
+        <span id="save-status"></span>
+      </div>
+    </main>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>

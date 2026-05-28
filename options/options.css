@@ -1,0 +1,95 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #0F0F0F;
+  color: #F1F1F1;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+header h1 {
+  color: #00E5A0;
+  margin-bottom: 30px;
+}
+
+section {
+  background: #1A1A1A;
+  border: 1px solid #2E2E2E;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+section h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 18px;
+  color: #F1F1F1;
+}
+
+.desc {
+  color: #909090;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #2E2E2E;
+}
+.setting-row:last-child {
+  border-bottom: none;
+}
+
+input[type=number], input[type=password] {
+  background: #0F0F0F;
+  border: 1px solid #2E2E2E;
+  color: #F1F1F1;
+  padding: 8px 12px;
+  border-radius: 4px;
+  width: 200px;
+  font-family: inherit;
+}
+
+input[type=checkbox] {
+  width: 20px;
+  height: 20px;
+  accent-color: #00E5A0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-family: inherit;
+}
+.btn:hover { opacity: 0.9; }
+
+.btn.primary {
+  background: #00E5A0;
+  color: #0A0A0A;
+}
+
+#save-status {
+  color: #00E5A0;
+  font-weight: 500;
+}
