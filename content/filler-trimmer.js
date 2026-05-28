@@ -25,7 +25,6 @@ class FillerTrimmer {
 
     const transcript = await this.fetcher.fetchTranscript(videoId);
     if (!transcript || transcript.length === 0) {
-      console.warn('[SmartPlay] FillerTrimmer: no transcript available');
       return;
     }
 

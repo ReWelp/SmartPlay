@@ -173,7 +173,7 @@ class TranscriptFetcher {
       return words;
 
     } catch (err) {
-      console.warn('[SmartPlay] TranscriptFetcher: fetch failed', err.message);
+      // Missing transcript is expected on many videos; fail silently.
       return [];
     }
   }
