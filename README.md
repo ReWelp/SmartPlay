@@ -1,5 +1,7 @@
 # SmartPlay
 
+![SmartPlay Popup](assets/SmartPlayScreenshot.png)
+
 Intelligent YouTube playback extension. Skips silence, dynamically adjusts speed, trims filler words, and tracks how much time you save.
 
 ## Features
