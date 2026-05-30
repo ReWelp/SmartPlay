@@ -1,30 +1,22 @@
 
 class ChannelMemory {
   static getChannelId() {
-    // Try desktop selector first, then mobile (ytm-slim-owner-renderer),
-    // then a generic href-based fallback that works on both layouts.
-    // getSelectorResult() is defined in utils/compat.js and returns the first match.
-    //
-    // Note: per-channel settings (including chapterAwareThreshold) are saved as
-    // the full settings blob in saveChannelSettings, so any new keys added to
-    // settings are automatically persisted without changes here.
+    // 1. Fastest path — always present in the page source, not lazy-loaded.
     const metaChannelId = document.querySelector('meta[itemprop="channelId"]');
-    if (metaChannelId && metaChannelId.content) {
-      return metaChannelId.content;
-    }
+    if (metaChannelId?.content) return metaChannelId.content;
 
-    const channelLink = getSelectorResult([
+    // 2. DOM selectors — inlined so there is no dependency on getSelectorResult().
+    const selectors = [
       'ytd-video-owner-renderer a.yt-simple-endpoint',  // desktop
       'ytm-slim-owner-renderer a',                      // mobile
       'a.yt-simple-endpoint[href*="/@"]',               // generic handle
       'a.yt-simple-endpoint[href*="/channel/"]',        // generic channel id
-    ]);
-    if (channelLink) {
-      const href = channelLink.getAttribute('href');
-      if (href) {
-        // e.g. /channel/UCXXXX or /@channelname
-        const parts = href.split('/');
-        return parts[parts.length - 1];
+    ];
+    for (const sel of selectors) {
+      const el = document.querySelector(sel);
+      if (el) {
+        const href = el.getAttribute('href');
+        if (href) return href.split('/').pop();
       }
     }
     return null;

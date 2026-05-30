@@ -54,16 +54,16 @@ async function init() {
 
   // Initialize modules
   modules.analyzer = new AudioAnalyzer(video);
+  modules.chapterReader = new ChapterReader(); // must come before SilenceSkipper
   modules.skipper = new SilenceSkipper(
     video,
     modules.analyzer,
     appliedSettings.silenceSkipper,
-    modules.chapterReader  // enables chapter-aware silence thresholds
+    modules.chapterReader  // now defined — enables chapter-aware silence thresholds
   );
   modules.speedController = new SpeedController(video, modules.analyzer, appliedSettings.adaptiveSpeed);
   modules.timeTracker = new TimeTracker();
   modules.fillerTrimmer = new FillerTrimmer(video, appliedSettings.smartFeatures);
-  modules.chapterReader = new ChapterReader();
 
   if (appliedSettings.enabled) {
     modules.skipper.start();
@@ -252,21 +252,25 @@ browserAPI.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.type === 'SAVE_CHANNEL_DEFAULTS') {
-    const channelId = ChannelMemory.getChannelId();
-    if (channelId) {
-      // saveChannelSettings is async — properly await it so we respond only
-      // after the storage write completes. return true keeps the channel open.
-      ChannelMemory.saveChannelSettings(channelId, settings)
-        .then(() => sendResponse({ success: true, channelId }))
-        .catch((err) => {
-          console.error("SmartPlay: Failed to save channel settings", err);
-          sendResponse({ success: false });
-        });
-      return true; // async
-    } else {
+    let channelId;
+    try {
+      channelId = ChannelMemory.getChannelId();
+    } catch (err) {
+      console.error('SmartPlay: getChannelId threw', err);
       sendResponse({ success: false });
       return false;
     }
+    if (channelId) {
+      ChannelMemory.saveChannelSettings(channelId, settings)
+        .then(() => sendResponse({ success: true, channelId }))
+        .catch(err => {
+          console.error('SmartPlay: saveChannelSettings failed', err);
+          sendResponse({ success: false });
+        });
+      return true; // async
+    }
+    sendResponse({ success: false });
+    return false;
   }
 
   if (msg.type === 'TAB_ACTIVATED') {
