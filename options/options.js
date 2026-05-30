@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Load stats ──────────────────────────────────────────────────────────────
   function loadStats() {
-    chrome.storage.local.get(['savedStats', 'lifetimeStats'], (res) => {
+    browserAPI.storage.local.get(['savedStats', 'lifetimeStats']).then((res) => {
       const today    = res.savedStats    || { silence: 0, speed: 0, filler: 0 };
       const lifetime = res.lifetimeStats || { silence: 0, speed: 0, filler: 0 };
 
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(loadStats, 2000);
 
   // ── Load settings ───────────────────────────────────────────────────────────
-  chrome.storage.sync.get(null, (settings) => {
+  browserAPI.storage.sync.get(null).then((settings) => {
     if (settings.enabled !== undefined) els.globalEnabled.checked = settings.enabled;
     if (settings.silenceSkipper) {
       els.minSilence.value   = settings.silenceSkipper.minSilenceDuration;
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Save settings ───────────────────────────────────────────────────────────
   els.btnSave.addEventListener('click', () => {
-    chrome.storage.sync.get(null, (settings) => {
+    browserAPI.storage.sync.get(null).then((settings) => {
       if (!settings.silenceSkipper) settings.silenceSkipper = {};
       if (!settings.adaptiveSpeed)  settings.adaptiveSpeed  = {};
 
@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       settings.apiKey = els.apiKey.value;
 
-      chrome.storage.sync.set(settings, () => {
+      browserAPI.storage.sync.set(settings).then(() => {
         els.status.innerText = 'Saved successfully!';
         setTimeout(() => els.status.innerText = '', 2000);
       });

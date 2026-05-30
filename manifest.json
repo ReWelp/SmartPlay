@@ -1,8 +1,14 @@
 {
   "manifest_version": 3,
   "name": "SmartPlay",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Intelligent YouTube playback — skip silence, adaptive speed, save time.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "smartplay@rewelp.com",
+      "strict_min_version": "109.0"
+    }
+  },
   "permissions": [
     "storage",
     "tabs",
@@ -17,6 +23,7 @@
     {
       "matches": ["https://www.youtube.com/watch*"],
       "js": [
+        "utils/compat.js",
         "utils/constants.js",
         "utils/storage.js",
         "utils/messaging.js",
@@ -39,7 +46,9 @@
     "open_in_tab": true
   },
   "background": {
-    "service_worker": "background/service-worker.js"
+    "service_worker": "background/service-worker.js",
+    "scripts": ["utils/compat.js", "background/service-worker.js"],
+    "type": "module"
   },
   "icons": {
     "16": "icons/icon16.png",

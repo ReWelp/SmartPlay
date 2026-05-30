@@ -1,23 +1,14 @@
+// Uses the browserAPI compat shim (utils/compat.js) so both Chrome and Firefox
+// get consistent promise-based storage access.
+
 const getStorage = async (keys) => {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(keys, (result) => {
-      resolve(result);
-    });
-  });
+  return browserAPI.storage.sync.get(keys);
 };
 
 const setStorage = async (items) => {
-  return new Promise((resolve) => {
-    chrome.storage.sync.set(items, () => {
-      resolve();
-    });
-  });
+  return browserAPI.storage.sync.set(items);
 };
 
 const removeStorage = async (keys) => {
-  return new Promise((resolve) => {
-    chrome.storage.sync.remove(keys, () => {
-      resolve();
-    });
-  });
+  return browserAPI.storage.sync.remove(keys);
 };

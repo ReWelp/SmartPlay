@@ -1,3 +1,8 @@
+// ── SmartPlay Service Worker ──────────────────────────────────────────────────
+// Works in both Chrome (MV3 service worker) and Firefox (background script).
+// Uses the browserAPI compat shim loaded via background.scripts in manifest.
+// ─────────────────────────────────────────────────────────────────────────────
+
 const DEFAULT_SETTINGS = {
   enabled: true,
   mode: 'auto',
@@ -25,27 +30,26 @@ const DEFAULT_SETTINGS = {
   }
 };
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.sync.get(null, (items) => {
+browserAPI.runtime.onInstalled.addListener(() => {
+  browserAPI.storage.sync.get(null).then((items) => {
     if (Object.keys(items).length === 0) {
-      chrome.storage.sync.set(DEFAULT_SETTINGS);
+      browserAPI.storage.sync.set(DEFAULT_SETTINGS);
     }
   });
 });
 
 const categoryCache = new Map();
 
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+browserAPI.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'TIME_SAVED_UPDATE') {
     const today = new Date().toISOString().split('T')[0];
 
     // ── Read both savedStats (today) and lifetimeStats in one call ────────────
-    chrome.storage.local.get(['savedStats', 'lifetimeStats'], (res) => {
+    browserAPI.storage.local.get(['savedStats', 'lifetimeStats']).then((res) => {
       // ── Daily stats ──────────────────────────────────────────────────────────
       let stats = res.savedStats || { date: today, silence: 0, speed: 0, filler: 0 };
 
       // ── Lifetime stats — never reset, only ever grow ─────────────────────────
-      // Structure mirrors savedStats but has no `date` field.
       let lifetime = res.lifetimeStats || { silence: 0, speed: 0, filler: 0 };
 
       if (stats.date !== today) {
@@ -66,7 +70,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (msg.source === 'speed')   { stats.speed   += msg.secondsSaved; lifetime.speed   += msg.secondsSaved; }
       if (msg.source === 'filler')  { stats.filler  += msg.secondsSaved; lifetime.filler  += msg.secondsSaved; }
 
-      chrome.storage.local.set({ savedStats: stats, lifetimeStats: lifetime });
+      browserAPI.storage.local.set({ savedStats: stats, lifetimeStats: lifetime });
     });
     return true;
   }
@@ -92,16 +96,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-chrome.tabs.onActivated.addListener(activeInfo => {
-  chrome.tabs.get(activeInfo.tabId, tab => {
+browserAPI.tabs.onActivated.addListener(activeInfo => {
+  browserAPI.tabs.get(activeInfo.tabId).then(tab => {
     if (tab && tab.url && tab.url.includes('youtube.com/watch')) {
-      chrome.tabs.sendMessage(tab.id, { type: 'TAB_ACTIVATED' }).catch(() => {});
+      // Use try/catch instead of .catch() — Firefox's chrome shim doesn't
+      // support chaining .catch() on the callback-based sendMessage form.
+      browserAPI.tabs.sendMessage(tab.id, { type: 'TAB_ACTIVATED' }).catch(() => {});
     }
-  });
+  }).catch(() => {});
 });
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+browserAPI.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url && tab.url.includes('youtube.com/watch')) {
-    chrome.tabs.sendMessage(tabId, { type: 'TAB_ACTIVATED' }).catch(() => {});
+    browserAPI.tabs.sendMessage(tabId, { type: 'TAB_ACTIVATED' }).catch(() => {});
   }
 });

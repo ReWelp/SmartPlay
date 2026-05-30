@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let settings = {};
 
   // Load initial settings
-  chrome.storage.sync.get(null, (items) => {
+  browserAPI.storage.sync.get(null).then((items) => {
     settings = items;
     updateUIFromSettings();
   });
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ── Today counter ─────────────────────────────────────────────────────────
   // extraMs = live buffered ms from content script (not yet flushed to storage).
   function updateTimeSaved(extraMs = 0) {
-    chrome.storage.local.get(['savedStats'], (res) => {
+    browserAPI.storage.local.get(['savedStats']).then((res) => {
       const saved = res.savedStats || { silence: 0, speed: 0, filler: 0 };
       const totalMs = secsToMs(saved.silence) + secsToMs(saved.speed) + secsToMs(saved.filler) + extraMs;
       elements.timeSavedText.innerText = `⏱ ${formatMs(totalMs)} saved today`;
@@ -69,26 +69,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Request live stats from content script ────────────────────────────────
   function fetchStats() {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    browserAPI.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
       if (tabs[0] && tabs[0].url && tabs[0].url.includes('youtube.com/watch')) {
         elements.banner.classList.add('hidden');
-        chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_STATUS' }, (response) => {
-          if (chrome.runtime.lastError || !response) {
-            updateTimeSaved(0);
-            return;
-          }
+        browserAPI.tabs.sendMessage(tabs[0].id, { type: 'GET_STATUS' })
+          .then((response) => {
+            if (!response) { updateTimeSaved(0); return; }
 
-          if (response.settings) {
-            settings = response.settings;
-            updateUIFromSettings();
-          }
+            if (response.settings) {
+              settings = response.settings;
+              updateUIFromSettings();
+            }
 
-          if (response.stats) {
-            updateLiveStats(response.stats);
-            // Pass the live unflushed speed buffer so the today counter ticks
-            updateTimeSaved(response.stats.bufferedMs || 0);
-          }
-        });
+            if (response.stats) {
+              updateLiveStats(response.stats);
+              // Pass the live unflushed speed buffer so the today counter ticks
+              updateTimeSaved(response.stats.bufferedMs || 0);
+            }
+          })
+          .catch(() => updateTimeSaved(0));
       } else {
         elements.banner.classList.remove('hidden');
         updateTimeSaved(0);
@@ -103,21 +102,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Settings helpers ──────────────────────────────────────────────────────
   function sendUpdate(key, value) {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    browserAPI.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
       if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: 'UPDATE_SETTING', key, value }).catch(() => {});
+        browserAPI.tabs.sendMessage(tabs[0].id, { type: 'UPDATE_SETTING', key, value }).catch(() => {});
       }
     });
 
     // Also persist to storage
-    chrome.storage.sync.get(null, (items) => {
+    browserAPI.storage.sync.get(null).then((items) => {
       const keys = key.split('.');
       let current = items;
       for (let i = 0; i < keys.length - 1; i++) {
         current = current[keys[i]];
       }
       current[keys[keys.length - 1]] = value;
-      chrome.storage.sync.set(items);
+      browserAPI.storage.sync.set(items);
     });
   }
 
@@ -223,36 +222,38 @@ document.addEventListener('DOMContentLoaded', async () => {
   elements.keywordGo.addEventListener('click', () => {
     const kw = elements.keywordInput.value.trim();
     if (kw) {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      browserAPI.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
         if (tabs[0]) {
-          chrome.tabs.sendMessage(tabs[0].id, { type: 'KEYWORD_JUMP', keyword: kw }, (res) => {
-            if (res && res.success) elements.keywordInput.value = '';
-          });
+          browserAPI.tabs.sendMessage(tabs[0].id, { type: 'KEYWORD_JUMP', keyword: kw })
+            .then((res) => { if (res && res.success) elements.keywordInput.value = ''; })
+            .catch(() => {});
         }
       });
     }
   });
 
-  elements.btnSettings.addEventListener('click', () => chrome.runtime.openOptionsPage());
+  elements.btnSettings.addEventListener('click', () => browserAPI.runtime.openOptionsPage());
 
   elements.btnHelp.addEventListener('click', () => {
-    chrome.tabs.create({ url: 'https://github.com/ReWelp/SmartPlay' });
+    browserAPI.tabs.create({ url: 'https://github.com/ReWelp/SmartPlay' });
   });
 
   elements.btnSaveChannel.addEventListener('click', () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    browserAPI.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
       if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: 'SAVE_CHANNEL_DEFAULTS' }, (res) => {
-          if (res && res.success) {
-            const orig = elements.btnSaveChannel.innerText;
-            elements.btnSaveChannel.innerText = 'Saved ✓';
-            elements.btnSaveChannel.style.color = '#00E5A0';
-            setTimeout(() => {
-              elements.btnSaveChannel.innerText = orig;
-              elements.btnSaveChannel.style.color = '';
-            }, 2000);
-          }
-        });
+        browserAPI.tabs.sendMessage(tabs[0].id, { type: 'SAVE_CHANNEL_DEFAULTS' })
+          .then((res) => {
+            if (res && res.success) {
+              const orig = elements.btnSaveChannel.innerText;
+              elements.btnSaveChannel.innerText = 'Saved ✓';
+              elements.btnSaveChannel.style.color = '#00E5A0';
+              setTimeout(() => {
+                elements.btnSaveChannel.innerText = orig;
+                elements.btnSaveChannel.style.color = '';
+              }, 2000);
+            }
+          })
+          .catch(() => {});
       }
     });
   });

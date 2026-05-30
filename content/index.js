@@ -142,7 +142,7 @@ function setupSpaNavigation() {
 }
 
 // Message Listener
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+browserAPI.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'GET_STATUS') {
     const stats = {
       speed: modules.speedController ? modules.speedController.getCurrentSpeed() : 1.0,
