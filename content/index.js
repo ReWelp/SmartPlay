@@ -48,7 +48,12 @@ async function init() {
 
   // Initialize modules
   modules.analyzer = new AudioAnalyzer(video);
-  modules.skipper = new SilenceSkipper(video, modules.analyzer, appliedSettings.silenceSkipper);
+  modules.skipper = new SilenceSkipper(
+    video,
+    modules.analyzer,
+    appliedSettings.silenceSkipper,
+    modules.chapterReader  // enables chapter-aware silence thresholds
+  );
   modules.speedController = new SpeedController(video, modules.analyzer, appliedSettings.adaptiveSpeed);
   modules.timeTracker = new TimeTracker();
   modules.fillerTrimmer = new FillerTrimmer(video, appliedSettings.smartFeatures);
@@ -125,7 +130,7 @@ function cleanup() {
 }
 
 function setupSpaNavigation() {
-  let lastUrl = location.href; 
+  let lastUrl = location.href;
   navObserver = new MutationObserver(() => {
     const url = location.href;
     if (url !== lastUrl) {
@@ -139,6 +144,18 @@ function setupSpaNavigation() {
     }
   });
   navObserver.observe(document, {subtree: true, childList: true});
+
+  // Mobile YouTube fires 'yt-navigate-finish' on SPA navigation in addition
+  // to (or sometimes instead of) triggering DOM mutations. We listen to both
+  // so that desktop and mobile navigation are handled reliably.
+  window.addEventListener('yt-navigate-finish', () => {
+    if (location.href.includes('/watch')) {
+      setTimeout(init, 500);
+    } else {
+      cleanup();
+      currentVideoId = null;
+    }
+  });
 }
 
 // Message Listener

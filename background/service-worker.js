@@ -12,7 +12,8 @@ const DEFAULT_SETTINGS = {
     minSilenceDuration: 0.3,
     maxSilenceDuration: 10,
     transition: 'fade',
-    fadeDurationMs: 150
+    fadeDurationMs: 150,
+    chapterAwareThreshold: true  // tighten threshold near chapter boundaries
   },
   adaptiveSpeed: {
     enabled: true,

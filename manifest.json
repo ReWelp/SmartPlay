@@ -21,11 +21,32 @@
   ],
   "host_permissions": [
     "https://www.youtube.com/*",
+    "https://m.youtube.com/*",
     "https://www.googleapis.com/*"
   ],
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/watch*"],
+      "js": [
+        "utils/compat.js",
+        "utils/constants.js",
+        "utils/storage.js",
+        "utils/messaging.js",
+        "content/audio-analyzer.js",
+        "content/silence-skipper.js",
+        "content/speed-controller.js",
+        "content/transcript-fetcher.js",
+        "content/filler-trimmer.js",
+        "content/chapter-reader.js",
+        "content/mode-detector.js",
+        "content/channel-memory.js",
+        "content/time-tracker.js",
+        "content/index.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://m.youtube.com/watch*"],
       "js": [
         "utils/compat.js",
         "utils/constants.js",

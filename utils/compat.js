@@ -96,3 +96,27 @@
     runtime,
   };
 })();
+
+// ── Mobile YouTube detection ───────────────────────────────────────────────
+// True when the extension is running on m.youtube.com (mobile web).
+// All mobile-specific code paths should be gated behind this flag so that
+// desktop behaviour is completely unchanged.
+window.IS_MOBILE_YT = location.hostname === 'm.youtube.com';
+
+// ── getSelectorResult(selectors) ──────────────────────────────────────────
+// Tries each CSS selector in order and returns the first non-null Element.
+// Use this instead of duplicating desktop/mobile selector fallback chains
+// across multiple files.
+//
+// Example:
+//   const el = getSelectorResult([
+//     'ytd-video-owner-renderer a.yt-simple-endpoint', // desktop
+//     'ytm-slim-owner-renderer a',                     // mobile
+//   ]);
+window.getSelectorResult = function getSelectorResult(selectors) {
+  for (const sel of selectors) {
+    const el = document.querySelector(sel);
+    if (el) return el;
+  }
+  return null;
+};

@@ -19,9 +19,13 @@ class AudioAnalyzer {
     if (this.ctx.state === 'suspended') {
       const resumeAudio = () => {
         this.ctx.resume();
-        document.removeEventListener('click', resumeAudio);
+        document.removeEventListener('click',      resumeAudio);
+        document.removeEventListener('touchstart', resumeAudio);
       };
-      document.addEventListener('click', resumeAudio, { once: true });
+      // Desktop: click; Mobile: touchstart — register both so AudioContext
+      // resumes on the first user interaction regardless of device type.
+      document.addEventListener('click',      resumeAudio, { once: true, passive: true });
+      document.addEventListener('touchstart', resumeAudio, { once: true, passive: true });
     }
   }
   
