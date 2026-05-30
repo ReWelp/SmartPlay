@@ -2,6 +2,7 @@
 // Works in both Chrome (MV3 service worker) and Firefox (background script).
 // Uses the browserAPI compat shim loaded via background.scripts in manifest.
 // ─────────────────────────────────────────────────────────────────────────────
+import '../utils/compat.js';
 
 const DEFAULT_SETTINGS = {
   enabled: true,

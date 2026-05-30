@@ -30,7 +30,7 @@
   // On Firefox: use the native promise-based `browser` object directly.
   // On Chrome: fall through to build the promisify polyfill below.
   if (_native) {
-    window.browserAPI = _native;
+    globalThis.browserAPI = _native;
     return;
   }
 
@@ -88,7 +88,7 @@
   };
 
   // ── Assemble ──────────────────────────────────────────────────────────────
-  window.browserAPI = {
+  globalThis.browserAPI = {
     storage: {
       sync:  makeStorageArea(_chrome.storage.sync),
       local: makeStorageArea(_chrome.storage.local),
@@ -103,7 +103,7 @@
 // True when the extension is running on m.youtube.com (mobile web).
 // All mobile-specific code paths should be gated behind this flag so that
 // desktop behaviour is completely unchanged.
-window.IS_MOBILE_YT = location.hostname === 'm.youtube.com';
+globalThis.IS_MOBILE_YT = typeof location !== 'undefined' && location.hostname === 'm.youtube.com';
 
 // ── getSelectorResult(selectors) ──────────────────────────────────────────
 // Tries each CSS selector in order and returns the first non-null Element.
@@ -115,7 +115,8 @@ window.IS_MOBILE_YT = location.hostname === 'm.youtube.com';
 //     'ytd-video-owner-renderer a.yt-simple-endpoint', // desktop
 //     'ytm-slim-owner-renderer a',                     // mobile
 //   ]);
-window.getSelectorResult = function getSelectorResult(selectors) {
+globalThis.getSelectorResult = function getSelectorResult(selectors) {
+  if (typeof document === 'undefined') return null;
   for (const sel of selectors) {
     const el = document.querySelector(sel);
     if (el) return el;

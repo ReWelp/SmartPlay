@@ -41,7 +41,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load initial settings
   browserAPI.storage.sync.get(null).then((items) => {
-    settings = items;
+    const stored = items || {};
+    settings = {
+      ...DEFAULT_SETTINGS,
+      ...stored,
+      silenceSkipper: { ...DEFAULT_SETTINGS.silenceSkipper, ...(stored.silenceSkipper || {}) },
+      adaptiveSpeed: { ...DEFAULT_SETTINGS.adaptiveSpeed, ...(stored.adaptiveSpeed || {}) },
+      smartFeatures: { ...DEFAULT_SETTINGS.smartFeatures, ...(stored.smartFeatures || {}) }
+    };
     updateUIFromSettings();
   });
 
