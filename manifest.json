@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SmartPlay",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Intelligent YouTube playback — skip silence, adaptive speed, save time.",
   "browser_specific_settings": {
     "gecko": {
