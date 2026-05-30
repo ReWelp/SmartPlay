@@ -258,7 +258,10 @@ browserAPI.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       // after the storage write completes. return true keeps the channel open.
       ChannelMemory.saveChannelSettings(channelId, settings)
         .then(() => sendResponse({ success: true, channelId }))
-        .catch(() => sendResponse({ success: false }));
+        .catch((err) => {
+          console.error("SmartPlay: Failed to save channel settings", err);
+          sendResponse({ success: false });
+        });
       return true; // async
     } else {
       sendResponse({ success: false });

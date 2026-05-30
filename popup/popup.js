@@ -253,17 +253,28 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (tabs[0] && tabs[0].url && tabs[0].url.includes('youtube.com/watch')) {
         browserAPI.tabs.sendMessage(tabs[0].id, { type: 'SAVE_CHANNEL_DEFAULTS' })
           .then((res) => {
+            const orig = elements.btnSaveChannel.innerText;
             if (res && res.success) {
-              const orig = elements.btnSaveChannel.innerText;
               elements.btnSaveChannel.innerText = 'Saved ✓';
               elements.btnSaveChannel.style.color = '#00E5A0';
-              setTimeout(() => {
-                elements.btnSaveChannel.innerText = orig;
-                elements.btnSaveChannel.style.color = '';
-              }, 2000);
+            } else {
+              elements.btnSaveChannel.innerText = 'Failed ❌';
+              elements.btnSaveChannel.style.color = '#FF4444';
             }
+            setTimeout(() => {
+              elements.btnSaveChannel.innerText = orig;
+              elements.btnSaveChannel.style.color = '';
+            }, 2000);
           })
-          .catch(() => {});
+          .catch(() => {
+            const orig = elements.btnSaveChannel.innerText;
+            elements.btnSaveChannel.innerText = 'Error ❌';
+            elements.btnSaveChannel.style.color = '#FF4444';
+            setTimeout(() => {
+              elements.btnSaveChannel.innerText = orig;
+              elements.btnSaveChannel.style.color = '';
+            }, 2000);
+          });
       }
     });
   });

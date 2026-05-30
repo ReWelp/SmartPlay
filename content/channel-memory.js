@@ -8,6 +8,11 @@ class ChannelMemory {
     // Note: per-channel settings (including chapterAwareThreshold) are saved as
     // the full settings blob in saveChannelSettings, so any new keys added to
     // settings are automatically persisted without changes here.
+    const metaChannelId = document.querySelector('meta[itemprop="channelId"]');
+    if (metaChannelId && metaChannelId.content) {
+      return metaChannelId.content;
+    }
+
     const channelLink = getSelectorResult([
       'ytd-video-owner-renderer a.yt-simple-endpoint',  // desktop
       'ytm-slim-owner-renderer a',                      // mobile
