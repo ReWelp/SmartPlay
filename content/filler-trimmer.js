@@ -1,5 +1,5 @@
 // On mobile, 40ms polling can cause jank. IS_MOBILE_YT is set by utils/compat.js.
-const POLL_MS = IS_MOBILE_YT ? 80 : 40;
+const FILLER_POLL_MS = IS_MOBILE_YT ? 80 : 40;
 
 class FillerTrimmer {
   constructor(videoElement, settings) {
@@ -42,7 +42,7 @@ class FillerTrimmer {
     //
     // We use POLL_MS (40ms desktop / 80ms mobile) to balance reliability with
     // mobile jank avoidance. At 80ms we still detect any filler window ≥ 160ms.
-    this._pollInterval = setInterval(() => this._poll(), POLL_MS);
+    this._pollInterval = setInterval(() => this._poll(), FILLER_POLL_MS);
   }
 
   // ── Poll tick (called every 40ms) ─────────────────────────────────────────

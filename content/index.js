@@ -18,8 +18,14 @@ async function init() {
   cleanup(); // Clean up previous instance
 
   // Load settings
-  const stored = await getStorage(null);
-  settings = { ...DEFAULT_SETTINGS, ...stored };
+  const stored = await getStorage(null) || {};
+  settings = { 
+    ...DEFAULT_SETTINGS, 
+    ...stored,
+    silenceSkipper: { ...DEFAULT_SETTINGS.silenceSkipper, ...(stored.silenceSkipper || {}) },
+    adaptiveSpeed: { ...DEFAULT_SETTINGS.adaptiveSpeed, ...(stored.adaptiveSpeed || {}) },
+    smartFeatures: { ...DEFAULT_SETTINGS.smartFeatures, ...(stored.smartFeatures || {}) }
+  };
 
   // Detect mode & apply channel memory
   const modeDetector = new ModeDetector();

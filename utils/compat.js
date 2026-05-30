@@ -64,7 +64,7 @@
   }
 
   // ── Tabs ──────────────────────────────────────────────────────────────────
-  const tabs = {
+  const tabs = _chrome.tabs ? {
     query:       (...a) => promisify(_chrome.tabs.query,       _chrome.tabs, ...a),
     get:         (...a) => promisify(_chrome.tabs.get,         _chrome.tabs, ...a),
     create:      (...a) => promisify(_chrome.tabs.create,      _chrome.tabs, ...a),
@@ -75,7 +75,7 @@
     },
     onActivated: _chrome.tabs.onActivated,
     onUpdated:   _chrome.tabs.onUpdated,
-  };
+  } : {};
 
   // ── Runtime ───────────────────────────────────────────────────────────────
   const runtime = {

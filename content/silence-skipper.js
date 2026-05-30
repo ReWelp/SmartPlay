@@ -9,7 +9,6 @@ const CHAPTER_BOUNDARY_DUR_MULT  = 2.0; // silence must last this ×longer near 
 // ── Mobile polling rate ───────────────────────────────────────────────────────
 // 40ms on desktop gives a reliable ~40ms reaction window.
 // On mobile, 40ms can cause jank, so we back off to 80ms.
-const POLL_MS = IS_MOBILE_YT ? 80 : 40;
 
 class SilenceSkipper {
   // chapterReader is an optional ChapterReader instance. When provided (and the

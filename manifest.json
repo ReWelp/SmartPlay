@@ -72,7 +72,6 @@
   },
   "background": {
     "service_worker": "background/service-worker.js",
-    "scripts": ["utils/compat.js", "background/service-worker.js"],
     "type": "module"
   },
   "icons": {
