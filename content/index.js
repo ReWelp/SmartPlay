@@ -162,13 +162,17 @@ function setupSpaNavigation() {
 browserAPI.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'GET_STATUS') {
     const stats = {
-      speed: modules.speedController ? modules.speedController.getCurrentSpeed() : 1.0,
-      audioLevel: modules.analyzer ? modules.analyzer.getDecibelLevel() : -Infinity,
-      chapters: modules.chapterReader ? modules.chapterReader.getChapters() : [],
-      bufferedMs: modules.timeTracker ? modules.timeTracker.getBufferedMs() : 0
+      speed:      modules.speedController ? modules.speedController.getCurrentSpeed() : 1.0,
+      audioLevel: modules.analyzer        ? modules.analyzer.getDecibelLevel()        : -Infinity,
+      chapters:   modules.chapterReader   ? modules.chapterReader.getChapters()       : [],
+      bufferedMs: modules.timeTracker     ? modules.timeTracker.getBufferedMs()       : 0
     };
     sendResponse({ settings, stats });
-    return true;
+    // sendResponse is synchronous — do NOT return true here.
+    // Returning true would tell Chrome to keep the channel open for an async
+    // response that never comes, causing "message channel closed" errors in the
+    // console every time the popup's 100ms poll fires.
+    return false;
   }
   
   if (msg.type === 'UPDATE_SETTING') {
@@ -214,18 +218,18 @@ browserAPI.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     
     sendResponse({ success: true });
-    return true;
+    return false; // synchronous response — no need to hold the channel open
   }
-  
+
   if (msg.type === 'SEEK_TO') {
     const video = document.querySelector('video');
     if (video && msg.timestamp !== undefined) {
       video.currentTime = msg.timestamp;
     }
     sendResponse({ success: true });
-    return true;
+    return false; // synchronous response
   }
-  
+
   if (msg.type === 'KEYWORD_JUMP') {
     if (!modules.fetcher) modules.fetcher = new TranscriptFetcher();
     modules.fetcher.fetchTranscript(currentVideoId).then(t => {
@@ -238,24 +242,29 @@ browserAPI.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ success: false, count: 0 });
       }
     });
-    return true; // async
+    return true; // async — sendResponse is called inside the .then callback
   }
-  
+
   if (msg.type === 'SAVE_CHANNEL_DEFAULTS') {
     const channelId = ChannelMemory.getChannelId();
     if (channelId) {
-      ChannelMemory.saveChannelSettings(channelId, settings);
-      sendResponse({ success: true, channelId });
+      // saveChannelSettings is async — properly await it so we respond only
+      // after the storage write completes. return true keeps the channel open.
+      ChannelMemory.saveChannelSettings(channelId, settings)
+        .then(() => sendResponse({ success: true, channelId }))
+        .catch(() => sendResponse({ success: false }));
+      return true; // async
     } else {
       sendResponse({ success: false });
+      return false;
     }
-    return true;
   }
-  
+
   if (msg.type === 'TAB_ACTIVATED') {
     // Maybe show a toast or nothing
   }
 });
+
 
 if (location.href.includes('/watch')) {
   if (document.readyState === 'loading') {

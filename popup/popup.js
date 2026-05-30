@@ -240,7 +240,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   elements.btnSaveChannel.addEventListener('click', () => {
     browserAPI.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
-      if (tabs[0]) {
+      // Only attempt if the active tab is actually a YouTube watch page.
+      // Without this guard, clicking on any other tab fires sendMessage to a
+      // tab with no content script, producing "Receiving end does not exist".
+      if (tabs[0] && tabs[0].url && tabs[0].url.includes('youtube.com/watch')) {
         browserAPI.tabs.sendMessage(tabs[0].id, { type: 'SAVE_CHANNEL_DEFAULTS' })
           .then((res) => {
             if (res && res.success) {

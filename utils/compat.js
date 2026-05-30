@@ -11,11 +11,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 (() => {
-  // Firefox exposes a native `browser` object with real Promises.
-  // Chrome only exposes `chrome` with callbacks (and an experimental
-  // `browser` shim that is incomplete in older builds).
-  // We prefer the native `browser` when available.
-  const _native = (typeof browser !== 'undefined' && browser.runtime) ? browser : null;
+  // Chrome 109+ ships its own `browser.*` namespace, but it still triggers
+  // "Unchecked runtime.lastError" warnings when using promise-based APIs and
+  // does NOT fully behave like Firefox's native `browser` object.
+  //
+  // We therefore ONLY use the native `browser` object on Firefox, and always
+  // run our own promisify wrapper on Chrome. Firefox is detected via userAgent.
+  const _isFirefox = navigator.userAgent.includes('Firefox');
+  const _native = (_isFirefox && typeof browser !== 'undefined' && browser.runtime) ? browser : null;
   const _chrome  = (typeof chrome  !== 'undefined' && chrome.runtime)  ? chrome  : null;
 
   if (!_chrome && !_native) {
@@ -24,9 +27,8 @@
     return;
   }
 
-  // If Firefox's native promise-based `browser` is available, use it directly.
-  // We only need to build the polyfill for Chrome (or Firefox without the
-  // native `browser` global).
+  // On Firefox: use the native promise-based `browser` object directly.
+  // On Chrome: fall through to build the promisify polyfill below.
   if (_native) {
     window.browserAPI = _native;
     return;
